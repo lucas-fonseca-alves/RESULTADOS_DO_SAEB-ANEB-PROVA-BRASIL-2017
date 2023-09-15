@@ -44,20 +44,35 @@ tabela_mt$frequencia_relativa <-  round(tabela_mt$frequencia_relativa, 4)*100
 amostra_saeb %>%
   ggplot(aes(x = NOTA_MT)) +
   geom_histogram(binwidth = 20,
-                 fill = "steelblue",
+                  fill = "gray",
                  color = "black"
   )+
   scale_x_continuous(limits = c(90, 370), breaks = seq(100, 360, 20))+
-  labs(title = "Histograma Notas Matemática", x = "Notas", y = "Frequência Absoluta")+
-  theme_bw()
+  labs(x = "Notas", y = "Frequência Absoluta")
 ggsave(filename = file.path(caminho_lucas, "histo_nota_mt.pdf"), width = 158, height = 93, units = "mm")
 
 #----------------------tabela resumo------------------------------
 
 describe(amostra_saeb$NOTA_MT)
-
+summary(amostra_saeb$NOTA_MT)
+var(amostra_saeb$NOTA_MT)
 
 #--------------------boxplot-------------------------------------
+
+#boxplot nota_mt
+
+amostra_saeb %>% 
+  ggplot(aes(x = '', y = NOTA_MT)) +
+  geom_boxplot()+
+  scale_y_continuous(limits = c(100, 400), breaks = seq(100, 400, 50))+
+  labs(x='', y = "Notas Matemática")
+ggsave(filename = file.path(caminho_lucas, "boxplot_nota_mt.pdf"), width = 158, height = 93, units = "mm")
+
+
+#Outliers: 352.6405 352.0601 348.8831 354.0257 355.0854 349.5291 352.6405 351.1681
+boxplot.stats(amostra_saeb$NOTA_MT)
+
+#--------------------------Região------------------------------------
 class(amostra_saeb$REGIAO)
 
 #transformando região em factor
@@ -65,76 +80,102 @@ amostra_saeb$REGIAO <- as.factor(amostra_saeb$REGIAO)
 
 #transformando os 'codigos' de região em 'nomes'
 amostra_saeb$REGIAO <- factor(amostra_saeb$REGIAO,
-                                     levels = c('1', '2', '3','4', '5'),
-                                     labels = c('Norte', 'Nordeste', 'Sudeste', 'Sul', 'Centro-Oeste' )
+                              levels = c('1', '2', '3','4', '5'),
+                              labels = c('Norte', 'Nordeste', 'Sudeste', 'Sul', 'Centro-Oeste' )
 )
 
-#boxplot nota_mt
+regiao <- amostra_saeb %>%
+  filter(!is.na(REGIAO)) %>%
+  count(REGIAO) %>%
+  mutate(
+    freq = (n/sum(n))*100 ,
+  ) %>%
+  mutate(
+    freq = gsub("\\.", ",", freq) %>% paste("%", sep = ""),
+    label = str_c(n, " (", freq, ")") %>% str_squish()
+  )
 
-amostra_saeb %>% 
-  ggplot(aes(x = reorder(REGIAO, NOTA_MT), y = NOTA_MT)) +
-  geom_boxplot()+
-  scale_y_continuous(limits = c(100, 400), breaks = seq(100, 400, 50))+
-  labs(x = "Regiões", y = "Notas Matemática")
-theme_bw()
-ggsave(filename = file.path(caminho_lucas, "boxplot_nota_mt.pdf"), width = 158, height = 93, units = "mm")
+ggplot(regiao) +
+  aes(x = fct_reorder(REGIAO, n, .desc=T), y = n, label = label) +
+  geom_bar(stat = "identity", width = 0.7) +
+  geom_text(
+    position = position_dodge(width = .9),
+    vjust = -0.5, #hjust = .5,
+    size = 3
+  ) + 
+  scale_y_continuous(limits = c(0, 400), breaks = seq(0, 400, 100))+
+  labs(x = "Região", y = "Frequência")
+ggsave(filename = file.path(caminho_lucas, "barras_regiao.pdf"), width = 158, height = 93, units = "mm")
+
+#---------------------------Localização------------------------------------
+class(amostra_saeb$LOCALIZACAO)
+
+#transformando região em factor
+amostra_saeb$LOCALIZACAO <- as.factor(amostra_saeb$LOCALIZACAO)
+
+#transformando os 'codigos' de região em 'nomes'
+amostra_saeb$LOCALIZACAO <- factor(amostra_saeb$LOCALIZACAO,
+                              levels = c('1', '2'),
+                              labels = c('Urbana', 'Rural' )
+)
+
+localizacao <- amostra_saeb %>%
+  filter(!is.na(LOCALIZACAO)) %>%
+  count(LOCALIZACAO) %>%
+  mutate(
+    freq = (n/sum(n))*100 ,
+  ) %>%
+  mutate(
+    freq = gsub("\\.", ",", freq) %>% paste("%", sep = ""),
+    label = str_c(n, " (", freq, ")") %>% str_squish()
+  )
+
+ggplot(localizacao) +
+  aes(x = fct_reorder(LOCALIZACAO, n, .desc=T), y = n, label = label) +
+  geom_bar(stat = "identity", width = 0.7) +
+  geom_text(
+    position = position_dodge(width = .9),
+    vjust = -0.5, #hjust = .5,
+    size = 3
+  ) + 
+  scale_y_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 200))+
+  labs(x = "Localização", y = "Frequência")
+ggsave(filename = file.path(caminho_lucas, "barras_localizacao.pdf"), width = 158, height = 93, units = "mm")
 
 
-#Medidas Resumo Boxplot por região
+#------------------------------------SEXO------------------------------------
+class(amostra_saeb$SEXO)
 
-#Nordeste
+#transformando região em factor
+amostra_saeb$SEXO <- as.factor(amostra_saeb$SEXO)
 
-nordeste <- amostra_saeb %>% 
-  filter(REGIAO == 'Nordeste')
+#transformando os 'codigos' de região em 'nomes'
+amostra_saeb$SEXO <- factor(amostra_saeb$SEXO,
+                                   levels = c('A', 'B'),
+                                   labels = c('Masculino', 'Feminino' )
+)
 
-describe(nordeste$NOTA_MT)
+sexo <- amostra_saeb %>%
+  filter(!is.na(SEXO)) %>%
+  count(SEXO) %>%
+  mutate(
+    freq = (n/sum(n))*100 ,
+  ) %>%
+  mutate(
+    freq = gsub("\\.", ",", freq) %>% paste("%", sep = ""),
+    label = str_c(n, " (", freq, ")") %>% str_squish()
+  )
 
-#Dois valores outliers 349.53, 345.99
-#mediana = 200.20
-boxplot.stats(nordeste$NOTA_MT)
+ggplot(sexo) +
+  aes(x = fct_reorder(SEXO, n, .desc=T), y = n, label = label) +
+  geom_bar(stat = "identity", width = 0.7) +
+  geom_text(
+    position = position_dodge(width = .9),
+    vjust = -0.5, #hjust = .5,
+    size = 3
+  ) + 
+  scale_y_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 200))+
+  labs(x = "Sexo", y = "Frequência")
+ggsave(filename = file.path(caminho_lucas, "barras_sexo.pdf"), width = 158, height = 93, units = "mm")
 
-
-#Norte
-
-Norte <- amostra_saeb %>% 
-  filter(REGIAO == 'Norte')
-
-describe(Norte$NOTA_MT)
-
-#valores outliers = 325.46
-#mediana = 202.56
-boxplot.stats(Norte$NOTA_MT)
-
-#Centro-Oeste
-
-CentroOeste <- amostra_saeb %>% 
-  filter(REGIAO == 'Centro-Oeste')
-
-describe(CentroOeste$NOTA_MT)
-
-#valores outliers =
-#mediana = 211.39
-boxplot.stats(CentroOeste$NOTA_MT)
-
-#Sul
-
-Sul <- amostra_saeb %>% 
-  filter(REGIAO == 'Sul')
-
-describe(Sul$NOTA_MT)
-
-#valores outliers = 109.53 354.03 352.64
-#mediana = 230.37
-boxplot.stats(Sul$NOTA_MT)
-
-#Sudeste
-
-Sudeste <- amostra_saeb %>% 
-  filter(REGIAO == 'Sudeste')
-
-describe(Sudeste$NOTA_MT)
-
-#valores outliers = 
-#mediana = 235.475 
-boxplot.stats(Sudeste$NOTA_MT)
 
